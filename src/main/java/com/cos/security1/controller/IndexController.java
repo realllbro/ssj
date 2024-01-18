@@ -2,6 +2,7 @@ package com.cos.security1.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
@@ -12,7 +13,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.cos.security1.model.User;
 import com.cos.security1.repository.UserRepository;
 
-@Controller //View를 리턴하겠다.
+//View(화면)를 리턴.
+@Controller 
 public class IndexController {
 	
 	@Autowired
@@ -21,11 +23,16 @@ public class IndexController {
 	@Autowired
 	BCryptPasswordEncoder bCryptPasswordEncoder;
 
-	//localhost:8080
+	/**
+	 * localhost:8080
+	 * 머스테치 기본폴더 src/main/resources/
+ 	 * 뷰 리졸버 설정: 
+ 	 *   templates(prefix), 
+ 	 * 	 .mustache(suffix) 생략가능!!
+	 * @return
+	 */
 	@GetMapping({"","/"})
 	public String index() {
-		// 머스테치 기본폴더 src/main/resources/
-		// 뷰 리졸버 설정 : templates(prefix), .mustache(suffix) 생략가능!!
 		return "index"; //src/main/resources/templates/index.mustache
 	}
 	
@@ -44,7 +51,17 @@ public class IndexController {
 		return "manager";
 	}	
 	
-	//스프링 시큐리티 해당주소를 낚아채버리네요!! - SecurityConfig 파일 생성 후 작동안함.
+	/**
+	 * 스프링 시큐리티 해당주소를 인터셉터 한다.
+	 * SecurityConfig 파일 생성해서 설정을 커스텀마이징 하면
+	 * 스프링에서 처리 안한다.
+	 * @return
+	 */
+	@GetMapping("/login")
+	public @ResponseBody String login() {
+		return "login";
+	}	
+	
 	@GetMapping("/loginForm")
 	public String loginForm() {
 		return "loginForm";
@@ -59,26 +76,35 @@ public class IndexController {
 	public String join(User user) {
 		System.out.println(user);
 		
+		// 패스워드 암호화가 안 되어 있으면 시큐리티로 로그인을 할 수 없어
+		// 비밀번호를 암호화 해준다.
 		String rawPassword = user.getPassword();
 		String encPassword = bCryptPasswordEncoder.encode(rawPassword);
 		
 		user.setPassword(encPassword);
 		user.setRole("ROLE_USER");
 		
-		userRepository.save(user); //회원가입 잘됨.비밀번호 : 1234 => 시큐리티로 로그인을 할 수 없음. 이유는 패스워드가 암호화가 안되었기 때
+		userRepository.save(user); 
 		
 		return "redirect:/loginForm";
 	}	
 	
-	//@Secured 메서드에 권한처리 할때 
+	/**
+	 * @Secured 메서드에 권한처리 할때 
+	 * @return
+	 */
 	@Secured("ROLE_ADMIN")
 	@GetMapping("/info")
 	public @ResponseBody String info() {
 		return "개인정보";
 	}
 	
-	//@PreAuthorize 메서드 타기 전에 권한체크함 
-	//@postAuthorize 메서드 타고난 후 권한체크함 
+	/**
+	 * @PreAuthorize 메서드 타기 전에 권한체크함
+	 * @postAuthorize 메서드 타고난 후 권한체크함 
+	 * @return
+	 */
+	//@PostAuthorize()
 	@PreAuthorize("hasRole('ROLE_MANAGER') or hasRole('ROLE_ADMIN')")
 	@GetMapping("/data")
 	public @ResponseBody String data() {
@@ -86,4 +112,3 @@ public class IndexController {
 	}	
 	
 }
-
